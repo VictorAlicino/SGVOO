@@ -1,0 +1,675 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct aircraft{ //Estrutura das variáveis de informações sobre o Avião
+    char model[20];
+    char matricula[10];
+    int disponivel;
+    char lenght[8];
+    char height[8];
+    char wingspan[8];
+    char cruise_speed[8];
+    char range[8];
+    char seats[5];
+    char bathrooms[3];
+    struct aircraft * prox;
+}aviao;
+
+typedef struct flight{ //Estrura das variáveis de informações sobre o Voo
+    char aircraft[50];       //Nome da Aeronave
+    char ap_dep[4];          //Aeroporto de Origem (Departure)
+    char ap_arv[4];          //Aeroporto de Destino (Arrival)
+    char dp_time[6];         //Horário de Decolagem (Departure Time)
+    char arv_time[6];        //Horário de Aterrissagem (Arrival Time)
+    char flight_dur[6];      //Duração do Voo
+    char matricula[30];  //Modelo e Fabricante da Aeronave
+    struct flight * prox;
+}voo;
+
+int mostraviaodisponivel(aviao *a){//printa todos os avioes disponiveis
+    aviao *b = a;
+    int i=0;
+    printf("Aviões disponiveis\n");
+    while(b!=NULL){
+        if(b->disponivel == 1){
+        printf("Modelo: %s \n", b->model);
+        printf("Matricula: %s \n", b->matricula);
+        i++;
+        }
+        b = b->prox; 
+    }
+    if(i==0){//caso nao tenha nenhuma aeronave disponivel
+        printf("Todas aeronaves estao em uso\n");
+        return 0;
+    }
+    return 1;
+}
+void mostra_todos_os_avioes(aviao *a){
+    aviao *aviaotemp =a;
+    while(aviaotemp!=NULL){
+        printf("Matriculas: %s\n", aviaotemp->matricula);
+        aviaotemp = aviaotemp->prox;
+    }
+}
+int consulta_aviao_pela_matricula(aviao *a, char matricula[]){
+    aviao *aviaotemp =a;
+    while(aviaotemp!=NULL && strcmp(matricula, aviaotemp->matricula)){
+        aviaotemp = aviaotemp->prox;
+    }
+    if(aviaotemp!=NULL){
+        printf("Matricula: %s\n", aviaotemp->matricula);
+        printf("Modelo: %s\n", aviaotemp->model);
+        printf("Comprimento: %s\n", aviaotemp->lenght);
+        printf("Altura: %s\n", aviaotemp->height);
+        printf("Envergadura: %s\n", aviaotemp->wingspan);
+        printf("Velocidade de Cruzeiro: %s\n", aviaotemp->cruise_speed);
+        printf("Alcance maximo: %s\n", aviaotemp->range);
+        printf("Quantidade de assentos: %s\n", aviaotemp->seats);
+        printf("Quantidade de banheiros: %s\n", aviaotemp->bathrooms);
+    }
+    return 0;
+}
+
+int  cadastraaviaocomvoo(voo* v, aviao *a, char matricula[]){
+
+    char opcao[100];
+    while(a!= NULL && strcmp(matricula, a->matricula)) { // Verifica o elemento onde matricula do aviao é igual a inserida
+        a = a->prox; 
+    }
+   
+    if(a != NULL) {
+        if(a->disponivel ==1){ //antes de setar indisponivel, verifica novamente se a aeronave esta em uso
+            a->disponivel = 0; 
+            return 1;
+       }else{
+           printf("Esta aeronave ja esta em uso!!\n");
+           return 0;
+       }
+    }else{
+        printf("Aeronave nao existente!\n");
+        printf("CANCELAR[1]\nINSERIR NOVAMENTE[2]");
+        scanf("%s%*c", opcao);
+        if(!strcmp("1", opcao)){
+            return 3;
+        }else if(!strcmp("2", opcao)){
+            return 0;
+        }   
+        return 0;
+    }
+    return 1;
+}
+
+aviao* insere_aviao_na_lista(aviao *a, char model[], char lenght[], //Funcao para copiar das variaveis auxiliares para a estrutura
+char height[], char wingspan[], char cruise_speed[], 
+char range[], char seats[], char bathrooms[], char matricula[], int disponivel){
+    aviao* aux = (aviao*) malloc(sizeof(aviao));
+    strcpy(aux->model, model);
+    strcpy(aux->matricula, matricula);
+    strcpy(aux->lenght, lenght);
+    strcpy(aux->height, height);
+    strcpy(aux->wingspan, wingspan);
+    strcpy(aux->cruise_speed, cruise_speed);
+    strcpy(aux->range, range);
+    strcpy(aux->seats, seats);
+    strcpy(aux->bathrooms, bathrooms);
+    aux->disponivel = disponivel;
+    aux->prox = a; //retorna o endereco da proxima estrutura(lista)
+    return aux;
+}
+voo* insere_voo_na_lista(voo* v, char aircraft[], char ap_dep[],
+char ap_arv[],char dp_time[], char arv_time[], char flight_dur[], char matricula[] ) {
+    voo* aux = (voo*) malloc(sizeof(voo));
+    strcpy(aux->aircraft, aircraft);
+    strcpy(aux->ap_dep, ap_dep);
+    strcpy(aux->ap_arv, ap_arv);
+    strcpy(aux->dp_time, dp_time);
+    strcpy(aux->arv_time, arv_time);
+    strcpy(aux->flight_dur, flight_dur);
+    strcpy(aux->matricula, matricula);//usara para linkar os avioes
+    aux->prox = v;
+    return aux;
+}
+
+int TimeVerify(char hora_origem[]){ //verifica horario
+    int a, b;
+    sscanf(hora_origem, "%d:%d", &a, &b);
+    if(a>23 || b>59 || a<0 || b<0){
+        return 0;
+    }else{
+        return 1;
+    }
+}
+voo*   entrada_usuario_voo(voo *v, aviao *a){ //Função para Registrar Voos
+    int verificador_de_aviao;
+    char aircraft[50];
+    char ap_dep[50];
+    char ap_arv[50];
+    char dp_time[8];
+    char arv_time[8];
+    char flight_dur[8];
+    char matricula[30];
+
+    printf("Prefixo: ");
+    scanf("%s%*c", aircraft);
+    printf("Aeroporto de Partida: ");
+    scanf("%s%*c", ap_dep);
+
+    while(strlen(ap_dep)!=3){ //loop para garantir que o input do usuário está correto
+        printf("Digite um Aeroporto Valido."); 
+        printf("Aeroporto de Partida: ");
+        scanf("%s%*c", ap_dep);
+    }
+
+    printf("Aeroporto de Destino: ");
+    scanf("%s%*c", ap_arv);
+    while((strlen(ap_arv)!=3) || (strcmp(ap_arv, ap_dep)==0)){
+        printf("Digite um Aeroporto Valido.");
+        printf("Aeroporto de Destino: ");
+        scanf("%s%*c", ap_arv);
+        
+    }
+
+    printf("Horario da Decolagem: ");
+    scanf("%s%*c", dp_time);
+    while(dp_time[2]!=':' || (strlen(dp_time)>5) || (TimeVerify(dp_time)!=1)){
+        printf("\a");
+        printf("O horario deve ser no formato hh:mm");
+        printf("Horario da Decolagem: ");
+        scanf("%s%*c", dp_time);
+    }
+
+
+    printf("Horario da Aterrisagem: ");
+    scanf("%s%*c", arv_time);
+    while(arv_time[2]!=':' || (strlen(arv_time)>5) || (TimeVerify(arv_time)!=1)){
+        printf("\a");
+        printf("O horario deve ser no formato hh:mm");
+        printf("Horario da Aterrisagem: ");
+        scanf("%s%*c", arv_time);
+    }
+
+
+    printf("Duracao do Voo: ");
+    scanf("%s%*c", flight_dur);
+    while(flight_dur[2]!=':' || (strlen(flight_dur)>5) || (TimeVerify(flight_dur)!=1)){
+        printf("\a");
+        printf("O horario deve ser no formato hh:mm");
+        printf("Duracao do Voo: ");
+        scanf("%s%*c", flight_dur);
+    }
+
+
+    printf("Escolha o aviao: ");
+    mostraviaodisponivel(a);
+    printf("Insira a matricula: \n");
+    scanf("%s%*c", matricula);
+    printf("Matricula inserida:  %s \n", matricula);
+    verificador_de_aviao = cadastraaviaocomvoo(v,a, matricula);
+
+    while(verificador_de_aviao == 0){
+    mostraviaodisponivel(a);
+    printf("Insira a matricula: \n");
+    scanf("%s%*c", matricula);
+    verificador_de_aviao = cadastraaviaocomvoo(v,a, matricula);
+    }
+
+    
+    if(verificador_de_aviao !=3){
+    v =   insere_voo_na_lista(v, aircraft, ap_dep, ap_arv, dp_time, arv_time, flight_dur, matricula);
+     printf("Inserido com sucesso!\n");
+    return v;
+    }else{
+        printf("Operacao cancelada!\n");
+        return v;
+    }
+    printf("\n");
+    
+    return v;
+}
+aviao* entrada_usuario_aviao(aviao *a){
+    
+    char model[20];
+    char lenght[8];
+    char height[8];
+    char wingspan[8];
+    char cruise_speed[8];
+    char range[8];
+    char seats[5];
+    char bathrooms[3];
+    char matricula[10];
+    
+    printf("\tVoce esta registrando o Aviao\n");
+    printf("Modelo: ");
+    scanf("%s%*c", model);
+    printf("Matricula: ");
+    scanf("%s%*c", matricula);
+    printf("Comprimento: ");
+    scanf("%s%*c", lenght);
+    printf("Altura: ");
+    scanf("%s%*c", height);
+    printf("Envergadura: ");
+    scanf("%s%*c", wingspan);
+    printf("Velocidade de Cruzeiro: ");
+    scanf("%s%*c", cruise_speed);
+    printf("Alcance Maximo: ");
+    scanf("%s%*c", range);
+    printf("Quantidade de Assentos: ");
+    scanf("%s%*c", seats);
+    printf("Quantidade de Banheiros: ");
+    scanf("%s%*c", bathrooms);
+    
+    //Inserindo dados na estrutura
+    
+    a = insere_aviao_na_lista(a, model, lenght, height, wingspan, cruise_speed, range, seats, bathrooms, matricula, 1);
+    printf("\n");
+    return a;
+}
+
+int printvoos(voo *v, aviao *a){
+
+    voo *vv = v;
+    aviao*aa = a;
+    int i=0;
+    int hrVoo; int minVoo;
+    int hora, minutos;
+    char horario_aeroporto[10];
+    char opcao[5];
+    printf("Digite o horario do aeroporto\n");
+    scanf("%s%*c", horario_aeroporto);
+    scanf(horario_aeroporto, "%d:%d",&hora ,&minutos);
+     while(horario_aeroporto[2]!=':' || (strlen(horario_aeroporto)>5) || (TimeVerify(horario_aeroporto)!=1)){
+        printf("\a");
+        printf("O horario deve ser no formato hh:mm \n");
+        printf("Digite o horario do aeroporto: \n");
+        scanf("%s%*c", horario_aeroporto);
+    }
+    printf("Partida(1) Chegada(2)\n");
+    scanf("%s%*c", opcao);
+
+
+
+
+ if(!strcmp("1", opcao)){
+    
+    printf("---------------------------------------------------------------------------\n");
+    printf("PAINEL DE PARTIDAS\n");
+    printf("---------------------------------------------------------------------------\n");
+    printf("HORARIO\t DESTINO\t VOO\t\t ESTIMADO\t OBSERVACAO\t\n");
+
+    while(vv!=NULL){
+  
+    sscanf(vv->dp_time, "%d:%d", &hrVoo, &minVoo);    
+    printf("%s\t   %s   \t %s \t %d:%d \t\t",vv->dp_time, vv->ap_arv,vv->aircraft,hora,minutos);
+
+    // VERIFICA O STATUS DO VOO DE PARTIDA
+    if((hrVoo-hora)>=1){
+        printf("Check-in Aberto\n");
+    }else if((hrVoo-hora)==00 && (minVoo-minutos)<=59 && (minVoo-minutos)>30){
+        printf("Check-in Fechado\n");
+    }else if((hrVoo-hora)==00 && (minVoo-minutos)<=30 && (minVoo-minutos)>=20){
+        printf("Embarque Proximo\n");
+    }else if((hrVoo-hora)==00 && (minVoo-minutos)<=20 && (minVoo-minutos)>10){
+        printf("Embarque Imediato\n");
+    }else if((hrVoo-hora)==00 && (minVoo-minutos)<=10 && (minVoo-minutos)>00){
+        printf("Ultima Chamada\n");
+    }else if((hrVoo-hora)==00 && (minVoo-minutos)<=00 && (minVoo-minutos)>-10){
+        printf("Partindo\n");
+    }else if((hrVoo<hora)){
+        printf("Voo Encerrado\n");
+    }
+    
+    i++;
+        vv = vv->prox;
+    } //FINAL DO WHILE
+
+    if(i==0){
+        printf("Nao foi encontrado voos\n");
+        return 0;
+    }
+ 
+    printf("---------------------------------------------------------------------------\n");
+
+ }else if(!strcmp("2", opcao)){ // PAINEL PARA MOSTRAR VOOS DE CHEGADA
+
+    printf("---------------------------------------------------------------------------\n");
+    printf("PAINEL DE CHEGADAS\n");
+    printf("---------------------------------------------------------------------------\n");
+    printf("HORARIO\t DESTINO\t VOO\t\t ESTIMADO\t OBSERVACAO\t\n");
+
+    while(vv!=NULL){
+  
+    sscanf(vv->dp_time, "%d:%d", &hrVoo, &minVoo);
+    printf("%s\t   %s   \t %s \t %d:%d \t\t",vv->dp_time, vv->ap_arv,vv->aircraft,hora,minutos);
+
+    // VERIFICA O STATUS DO VOO DE PARTIDA
+    if((hrVoo-hora)>=1){
+        printf("Estimado\n");
+    }else if((hrVoo-hora)==00 && (minVoo-minutos)<=59 && (minVoo-minutos)>30){
+        printf("testando\n");
+    }else if((hrVoo-hora)==00 && (minVoo-minutos)<=30 && (minVoo-minutos)>20){
+        printf("Pouso\n");
+    }else if((hrVoo-hora)==00 && (minVoo-minutos)<=20 && (minVoo-minutos)>10){
+        printf("Desembarcando\n");
+    }else if((hrVoo-hora)==00 && (minVoo-minutos)<=10 && (minVoo-minutos)>00){
+        printf("Ultima Chamada\n");
+    }else if((hrVoo-hora)==00 && (minVoo-minutos)<=00 && (minVoo-minutos)>-10){
+        printf("Partindo\n");
+    }else if((hrVoo<hora)){
+        printf("Voo Encerrado\n");
+    }else {
+        printf("\n");
+    }
+    
+    i++;
+        vv = vv->prox;
+    } //FINAL DO WHILE
+
+    if(i==0){
+        printf("Nao foi encontrado voos\n");
+        return 0;
+    }
+    printf("---------------------------------------------------------------------------\n");
+
+ }else {
+    printf("Opcao nao encontrada\n");
+    return 0;
+    }
+    return 0;
+    
+}
+void deixaroaviaodisponivelparauso(voo* v, aviao *a, char matricula[]){
+    aviao *aviaotemp =a;
+    while(aviaotemp!= NULL && strcmp(matricula, aviaotemp->matricula)) { // Verifica o elemento onde matricula do aviao é igual a inserida
+        aviaotemp = aviaotemp->prox; 
+    }
+    if(aviaotemp != NULL) {
+        if(aviaotemp->disponivel ==0){ //antes de setar disponivel, verifica novamente se a aeronave esta mesmo desativada
+            aviaotemp->disponivel = 1; 
+        }
+}
+}
+int editar_voo(voo *v, aviao *a, char numvoo[]){
+    int opcao_edita_voo;
+    voo *vv =v;
+
+    while(vv!=NULL && strcmp(numvoo, vv->aircraft)){
+         vv = vv->prox;
+    }
+
+    if(vv!=NULL){
+        printf ("Escolha o que deseja alterar: \n");
+        printf ("Prefixo[1] Aeroporto de partida[2] Aeroporto de destino[3] Horario decolagem[4] Horario de aterrissagem[5] Duracao do Voo[6] Aeronave[7]");
+        scanf ("%d", &opcao_edita_voo);
+
+        if (opcao_edita_voo == 1){
+            printf("Insira o prefixo: ");
+            scanf("%s%*c", vv->aircraft);
+
+        }else if(opcao_edita_voo == 2){
+            printf("Aeroporto de Partida: ");
+            scanf("%s%*c", vv->ap_dep);
+                while(strlen(vv->ap_dep)>3){ //loop para garantir que o input do usuário está correto
+                    printf("Digite um Aeroporto Valido."); 
+                    printf("Aeroporto de Partida: ");
+                    scanf("%s%*c", vv->ap_dep);
+                }
+        
+    
+        }else if(opcao_edita_voo == 3){
+                printf("Aeroporto de Destino: ");
+                scanf("%s%*c", vv->ap_arv);
+    
+                while((strlen(vv->ap_arv)>3) || (strcmp(vv->ap_arv, vv->ap_dep)==0)){
+                    printf("Digite um Aeroporto Valido.");
+                    printf("Aeroporto de Destino: ");
+                    scanf("%s%*c", vv->ap_arv);
+                    }
+
+        }else if(opcao_edita_voo == 4){
+                printf("Horario da Decolagem: ");
+                scanf("%s%*c", vv->dp_time);
+                while(vv->dp_time[2]!=':' || (strlen(vv->dp_time)>5) || (TimeVerify(vv->dp_time)!=1)){
+                    printf("\a");
+                    printf("O horario deve ser no formato hh:mm");
+                    printf("Horario da Decolagem: ");
+                    scanf("%s%*c", vv->dp_time);
+                }
+
+        }else if(opcao_edita_voo == 5){
+                printf("Horario da Aterrisagem: ");
+                scanf("%s%*c", vv->arv_time);
+                while(vv->arv_time[2]!=':' || (strlen(vv->arv_time)>5) || (TimeVerify(vv->arv_time)!=1)){
+                    printf("\a");
+                    printf("O horario deve ser no formato hh:mm");
+                    printf("Horario da Aterrisagem: ");
+                    scanf("%s%*c", vv->arv_time);
+                }
+        }else if(opcao_edita_voo == 6){
+                printf("Duracao do Voo: ");
+                scanf("%s%*c", vv->flight_dur);
+                while(vv->flight_dur[2]!=':' || (strlen(vv->flight_dur)>5) || (TimeVerify(vv->flight_dur)!=1)){
+                    printf("\a");
+                    printf("O horario deve ser no formato hh:mm");
+                    printf("Duracao do Voo: ");
+                    scanf("%s%*c", vv->flight_dur);
+    }
+        }else if(opcao_edita_voo == 7){
+            deixaroaviaodisponivelparauso(v,a,vv->matricula);
+
+            mostraviaodisponivel(a);
+            printf("Insira a matricula: \n");
+            scanf("%s%*c", vv->matricula);
+            printf("Matricula inserida:  %s \n", vv->matricula);
+
+
+            while(cadastraaviaocomvoo(v,a, vv->matricula) == 0){
+                    mostraviaodisponivel(a);
+                    cadastraaviaocomvoo(v,a, vv->matricula);
+                    printf("Insira a matricula: \n");
+                    scanf("%s%*c", vv->matricula);
+    }
+
+        }
+
+
+
+    }else{
+        printf("Nao existe esse voo(insira novamente) \n");
+        return 0;
+    }
+
+    return 1;
+}
+int editar_aviao(aviao *a, char matriculaparapesquisa[]){
+    int opcao_edita_voo;
+    aviao *aviaotemp = a;
+
+    while(aviaotemp!=NULL && strcmp(matriculaparapesquisa, aviaotemp->matricula)){
+         aviaotemp = aviaotemp->prox;
+    }
+
+    if(aviaotemp!=NULL){
+        printf ("Escolha o que deseja alterar: \n");
+        printf ("Matricula[1] Modelo[2] Comprimento[3] Altura[4] Envergadura[5] Velocidade Cruzeiro[6] Alcance[7] Assentos[8] Banheiro[9]");
+        scanf ("%d", &opcao_edita_voo);
+        if (opcao_edita_voo == 1){
+            printf("Insira a matricula: ");
+            scanf("%s%*c", aviaotemp->matricula);
+        }else if(opcao_edita_voo == 2){
+            printf("Insira o modelo: ");
+            scanf("%s%*c", aviaotemp->model); 
+        }else if(opcao_edita_voo == 3){
+                printf("Insira o comprimento: ");
+                scanf("%s%*c", aviaotemp->lenght);
+        }else if(opcao_edita_voo == 4){
+                printf("Insira a altura: ");
+                scanf("%s%*c", aviaotemp->height);
+        }else if(opcao_edita_voo == 5){
+                printf("Insira o wingspan: ");
+                scanf("%s%*c", aviaotemp->wingspan);
+ 
+        }else if(opcao_edita_voo == 6){
+                printf("Insira a velocidade de cruseiro: ");
+                scanf("%s%*c", aviaotemp->cruise_speed);
+
+        }else if(opcao_edita_voo == 7){
+                printf("Insira o alcance maximo do aviao: ");
+                scanf("%s%*c", aviaotemp->range);
+        }else if(opcao_edita_voo == 8){
+                printf("Insira o numero de assentos: ");
+                scanf("%s%*c", aviaotemp->seats);
+        }else if(opcao_edita_voo == 9){
+                printf("Insira o numero de banheiros: ");
+                scanf("%s%*c", aviaotemp->bathrooms);
+        }
+
+        printf("Alterado com sucesso!!\n");
+
+    }else{
+        printf("Nao existe essa aeronave(insira novamente) \n");
+        return 0;
+    }
+
+    return 1;
+}
+
+voo*   remover_voo(voo *v, aviao *a, char numvoo[]){
+
+    voo *vooanterior = v; //Voo anterior
+    voo *vootemp = v; // Usado para encontrar o voo
+    
+    while(vootemp!= NULL && strcmp(numvoo, vootemp->aircraft)) { // localiza o elemento
+        vooanterior = vootemp;
+        vootemp = vootemp->prox;      
+    }
+    if(vootemp != NULL) {
+        if(vootemp == v){
+        deixaroaviaodisponivelparauso(vootemp,a,vootemp->matricula);
+            v = v->prox; 
+            return v;
+        }else{
+        deixaroaviaodisponivelparauso(vootemp,a,vootemp->matricula); 
+        vooanterior->prox = vootemp->prox;
+        free(vootemp);
+        printf("Voo deletado com sucesso!\n");
+        return v;
+    }
+    }else{  printf("Voo nao encontrado\n");}
+    return v;
+}
+
+aviao* remover_aviao(aviao *a, char matricula[]){
+
+    aviao *aviaoanterior = a; //Voo anterior
+    aviao *aviaotemp = a; // Usado para encontrar o voo
+    
+    while(aviaotemp!= NULL && strcmp(matricula, aviaotemp->matricula)) { // localiza o elemento
+        aviaoanterior = aviaotemp;
+       aviaotemp = aviaotemp->prox;      
+    }
+    if(aviaotemp != NULL) {
+        if(aviaotemp->disponivel ==1){
+
+    if(aviaotemp == a){
+        
+            a = a->prox; 
+            return a;
+        }else{
+        aviaoanterior->prox = aviaotemp->prox;
+        free(aviaotemp);
+        printf("Aviao deletado com sucesso!\n");
+        return a;
+    }
+        }else{printf("Aviao esta em uso, nao foi possivel deletar!!!\n"); }
+        
+    }else{  printf("Voo nao encontrado\n");}
+    return a;
+}
+int menuvoo(voo *v, aviao *a){
+
+    while(1){
+        int opcao;
+        char numvoo[20],matriculaparapesquisa[15];
+        printf("Inserir aeronave (1)  Inserir voo(2) Consultar voos(3) Editar voo(4)  Editar aeronave(5) Remover voo(6) Remover Aeronave(7) Consultar Aeronave(8)\n");
+        scanf("%d", &opcao);
+        
+        if(opcao==1){
+           // a = insereaviao(a); Insere os avioes
+           printf("Avioes testes\n");
+           a = insere_aviao_na_lista(a, "Boeing", "1","1", "1","1","1", "1", "1","ptbra", 0);
+           a = insere_aviao_na_lista(a, "Airbus", "1","1", "1","1","1", "1", "1","predf", 0);
+           a = insere_aviao_na_lista(a, "Avianca", "1","1", "1","1","1", "1", "1","bomdia", 1);
+           a = insere_aviao_na_lista(a, "Minhanossa", "1","1", "1","1","1", "1", "1","oi", 1);
+           a = insere_aviao_na_lista(a, "BrasilAviacao", "1","1", "1","1","1", "1", "1","brasilv", 1);
+
+        }else if(opcao==2) {
+            
+            v = entrada_usuario_voo(v, a); // Funcao para cadastrar os voos
+            // v = insere_voo_na_lista(v, "GLO1234", "IGU", "GRU", "19:30","19:30","19:30", "ptbra");
+           //  v = insere_voo_na_lista(v, "GLO1254", "IGU", "GRU", "20:30","19:30","19:30", "predf");
+            // v = insere_voo_na_lista(v, "GLO1444", "IGU", "GRU", "23:30","19:30","19:30", "bomdia");
+        }else if(opcao==3) {
+            
+           // printaaeronaves(a);
+            printvoos(v,a);
+        }else if(opcao==4) {
+            printf("Insira o numero do voo\n");
+            scanf("%*c%[^\n]%*c", numvoo);
+            printf("Caralho de string:    %s", numvoo);
+            editar_voo(v,a,numvoo);
+
+           
+        }else if(opcao==5) {
+            mostraviaodisponivel(a);
+            printf("Insira a matricula da aeronave:\n");
+            scanf("%*c%[^\n]%*c", matriculaparapesquisa);
+            printf("Caralho de string:    %s", matriculaparapesquisa);
+           
+             while(editar_aviao(a,matriculaparapesquisa)==0){
+                printf("Insira a matricula da aeronave\n");
+                scanf("%s%*c", matriculaparapesquisa);
+                editar_aviao(a,matriculaparapesquisa);
+
+          }
+        }else if(opcao==6) {
+        
+            printf("Insira o numero do voo para deletar:\n");
+            scanf("%*c%[^\n]%*c", numvoo);
+            printf("Caralho de string:    %s\n", numvoo);
+            v = remover_voo(v,a,numvoo);
+
+
+        }else if(opcao==7) {
+            mostraviaodisponivel(a);
+            printf("Insira o numero a matricula da aeronave para deletar:\n");
+            scanf("%*c%[^\n]%*c", matriculaparapesquisa);
+            printf("Caralho de string:    %s\n", matriculaparapesquisa);
+            a = remover_aviao(a,matriculaparapesquisa);
+
+        }else if(opcao==8) {
+            mostra_todos_os_avioes(a);
+            printf("Insira o numero a matricula da aeronave para consultar:\n");
+            scanf("%*c%[^\n]%*c", matriculaparapesquisa);
+            printf("Caralho de string:    %s\n", matriculaparapesquisa);
+            consulta_aviao_pela_matricula(a,matriculaparapesquisa);
+
+        }
+    
+
+    }
+    return 0;
+}
+int main() {
+
+    voo *v;
+    aviao *a;
+    v=NULL;
+    a=NULL;
+    //menucpf(l);
+    menuvoo(v,a);
+    
+    
+    
+    return 0;
+}
