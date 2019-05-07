@@ -1,0 +1,292 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+//ESTRUTURA PARA ARMAZENAR OS DADOS DO CPF
+typedef struct no {
+    char nomeprograma[15];
+    char nomepessoa[100];
+    char cpf[20];
+    char categoria[10];
+    int saldo;
+    struct no * prox;
+} pessoa;
+//INSERE NA LISTA OS DADOS DO CPF
+pessoa* insere(pessoa* l, char categoria[], char nomepessoa[],char cpf[],char nomeprograma[], int saldo ) {
+    pessoa* aux = (pessoa*) malloc(sizeof(pessoa));
+    strcpy(aux->categoria, categoria);
+    strcpy(aux->nomepessoa, nomepessoa);
+    strcpy(aux->nomeprograma, nomeprograma);
+    strcpy(aux->cpf, cpf);
+    aux->saldo = saldo;
+    aux->prox = l;
+    
+    return aux;
+}
+//VERIFICA SE POSSUI LETRA NO CPF
+int verifica_letra_cpf(char cpf[]){
+    
+        int i;
+        int especial = 0;
+        for(i=0; i<11; i++){
+            if (!(cpf[i] < 'a' || cpf[i] > 'z')){
+                especial ++;
+            }
+        }
+    if(especial!=0){
+        return 0;
+    }
+    return 1;
+}
+//A PALAVRA FICA EM MAIUSCULO
+char *verifica_transforma_palavras(char auxiliar[20]){
+
+	int j = 0;
+
+	for (int num = 0; num < strlen(auxiliar); num++){
+
+		if (auxiliar[num] >= 'a' && auxiliar[num] <= 'z')
+			auxiliar[num] -= 32;
+		if (auxiliar[num] != ' '){
+			if (auxiliar[num] > 'Z' || auxiliar[num] < 'A'){
+				printf("Insira um nome valido : \n");
+				scanf("%s%*c", auxiliar);
+				return verifica_transforma_palavras(auxiliar);
+			}
+		}
+	}
+	return auxiliar;
+}
+//VERIFICA SE O CPF E VALIDO
+int verificacpf(pessoa *l,char cpf[]){
+    
+    int comletra;
+    int errocpf=0;
+    pessoa *cabeca = l;
+    while(l!=NULL){
+        if(!strcmp(l->cpf,cpf)){
+            errocpf++;
+        }
+        l = l->prox;
+    }
+    
+    if(errocpf !=0){
+        printf("CPF existente, insira novamente: \n");
+        scanf("%[^\n]%*c",cpf);
+        return  verificacpf(cabeca, cpf);
+    }
+    if( strlen(cpf) != 11){
+        printf("CPF invalido com tamanho invalido\n");
+        printf("Insira novamente:\n");
+        scanf("%[^\n]%*c",cpf);
+        return verificacpf(cabeca, cpf);
+    }
+    
+    if(verifica_letra_cpf(cpf)==0){
+        printf("CPF invalido contem letras\n");
+        printf("Insira novamente:\n");
+        scanf("%[^\n]%*c",cpf);
+        return verificacpf(cabeca, cpf);
+    }
+    
+    return 0;
+}
+
+pessoa* cadastro( pessoa *l){
+    char nomeprograma[15];
+    char nomepessoa[100];
+    char cpf[20];
+    char categoria[10];
+    int saldo;
+    
+    #ifdef _WIN32
+        fflush(stdin);
+    #else
+        __fpurge(stdin);
+    #endif
+
+    printf("Insira o CPF: \n");
+    scanf("%s%*c",cpf);
+    verificacpf(l,cpf);
+
+    #ifdef _WIN32
+        fflush(stdin);
+    #else
+        __fpurge(stdin);
+    #endif
+
+    printf("Insira seu nome:\n");
+    scanf("%[^\n]",nomepessoa);
+    strcpy(verifica_transforma_palavras(nomepessoa), nomepessoa);
+
+    #ifdef _WIN32
+        fflush(stdin);
+    #else
+        __fpurge(stdin);
+    #endif
+
+    printf("Insira o programa: \n");
+    scanf("%s%*c",nomeprograma);
+    strcpy(nomeprograma, verifica_transforma_palavras(nomeprograma));
+
+    #ifdef _WIN32
+        fflush(stdin);
+    #else
+        __fpurge(stdin);
+    #endif
+    
+    printf("Insira categoria: \n");
+    scanf("%s%*c",categoria);
+    strcpy(categoria, verifica_transforma_palavras(categoria));
+
+    #ifdef _WIN32
+        fflush(stdin);
+    #else
+        __fpurge(stdin);
+    #endif
+    
+    printf("Insira saldo: \n");
+    scanf("%d", &saldo);
+    
+    
+    
+    
+    l =   insere(l, categoria,nomepessoa, cpf, nomeprograma, saldo);
+
+    printf("Pessoa Cadastrada Com Sucesso \n");
+    
+    return l;
+}
+//CONSULTAR OS DADOS, CPF INDIVIDUAL OU CONSULTAR TODOS OS CPFS
+int consultar(pessoa *l){
+    int i=0;
+    int opcao=0;
+    char cpf[20];
+    pessoa * ant = l; // elemento anterior
+    pessoa * p = l;
+    printf(" Consultar individual[1] Consultar todos os cadastros[2] \n");
+    scanf("%d", &opcao);
+    if(opcao==1){
+        
+        printf("Insira o CPF para consultar\n");
+        scanf("%s%*c",cpf);
+        printf("\n");
+        
+        while(p!= NULL && strcmp(p->cpf, cpf)) { // localiza o elemento
+            p = p->prox;
+        }
+        if(p != NULL) {
+            
+            printf("CPF:        %s\n", p->cpf);
+            printf("Nome:       %s\n", p->nomepessoa);
+            printf("Programa:   %s\n", p->nomeprograma);
+            printf("Categoria:  %s\n", p->categoria);
+            printf("Saldo:      %d\n\n", p->saldo);
+            
+        }
+        
+    }else if(opcao==2){
+        
+        while(l!=NULL){
+            
+            printf("CPF:        %s\n", l->cpf);
+            printf("Nome:       %s\n", l->nomepessoa);
+            printf("Programa:   %s\n", l->nomeprograma);
+            printf("Categoria:  %s\n", l->categoria);
+            printf("Saldo:      %d\n\n", l->saldo);
+            i++;
+            l = l->prox;
+        }
+        if (i==0){
+            printf("Nenhum Cadastro Encontrado\n");
+        }
+    }
+    
+    
+    return 0;
+    
+    
+    
+}
+
+
+pessoa * retira(pessoa* l) {
+
+    char cpf[20];
+    printf("Insira o CPF para deletar\n");
+    scanf("%s%*c",cpf);
+
+    pessoa * ant = l; // elemento anterior
+    pessoa * p = l; // usado para encontrar o elemento
+
+
+    
+    while(p!= NULL && strcmp(p->cpf, cpf)) { // localiza o elemento
+        ant = p;
+        p = p->prox;
+        
+    }
+    if(p != NULL) {
+        if(p == l)
+            l = l->prox;
+        else
+            ant->prox = p->prox;
+        free(p);
+        printf("CPF deletado com suceso!\n");
+    }
+    else printf("CPF inexistente\n");
+    return l;
+}
+//EDITA OS DADOS DA PESSOA
+int editar (pessoa *l){
+
+    char cpf[20];
+    printf("Insira o CPF para editar:\n");
+    scanf("%s%*c",cpf);
+
+    int opcao1;
+    pessoa * p = l; // variavel auxiliar para procurar
+    
+    
+    while(p!= NULL && strcmp(p->cpf, cpf)) { // localiza o cpf para editar
+        p = p->prox;
+    }
+    
+    if(p != NULL) {
+        
+        printf ("Escolha o que deseja alterar: \n");
+        printf ("Nome[1] CPF[2] Categoria[3] Programa[4] Saldo[5]\n");
+        scanf ("%d", &opcao1);
+        if (opcao1 == 1){
+            printf("Digite o novo NOME:\n");
+            scanf("%s%*c",p->nomepessoa);
+            strcpy(p->nomepessoa, verifica_transforma_palavras(p->nomepessoa));
+            
+        }
+        else if (opcao1 == 2){
+            printf("Digite o novo CPF:\n");
+            scanf("%s%*c",p->cpf);
+            verificacpf(l, p->cpf);
+        }
+        else if (opcao1 == 3){
+            printf("Digite a nova CATEGORIA:\n");
+            scanf("%s%*c",p->categoria);
+            strcpy(p->categoria, verifica_transforma_palavras(p->categoria));
+        }
+        else if (opcao1 == 4){
+            printf("Digite o novo PROGRAMA:\n");
+            scanf("%s%*c",p->nomeprograma);
+            strcpy(p->nomeprograma, verifica_transforma_palavras(p->nomeprograma));
+        }
+        else if (opcao1 == 5){
+            printf("Digite o novo SALDO:\n");
+            scanf ("%d", &p->saldo);
+        }
+        
+        printf("Dados alterado com sucesso!!\n");
+    }else printf("CPF nao encontrado\n");
+
+    
+
+    return 1;
+}
