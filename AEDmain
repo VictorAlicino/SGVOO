@@ -1,0 +1,606 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "navigations.h"
+#include "cpf.h"
+#include "utilities.h"
+
+#ifdef _WIN32
+    #include <windows.h>
+#else   
+    #include <unistd.h>
+#endif
+
+
+
+//ESTRUTURA DAS VARIAVEIS DE VOO
+typedef struct flight{ 
+    char prefixo[50];       //Nome da Aeronave
+    char ap_dep[4];          //Aeroporto de Origem (Departure)
+    char ap_arv[4];          //Aeroporto de Destino (Arrival)
+    char dp_time[6];         //Horário de Decolagem (Departure Time)
+    char arv_time[6];        //Horário de Aterrissagem (Arrival Time)
+    char flight_dur[6];      //Duração do Voo
+    char modeloaviao[30];  //Modelo e Fabricante da Aeronave
+    struct flight * prox;
+}voo;
+
+// VERIFICA se existe LETRA na number
+char *isword(char palavra[], int especial){
+     int i;
+    
+        for(i=0; i<strlen(palavra); i++){
+            if (!(palavra[i] < 'a' || palavra[i] > 'z')){
+                especial++;
+            }
+        }
+    if(especial>0){
+        printf("Contem letras\n");
+        printf("Insira novamente:\n");
+        scanf("%s%*c",palavra);
+        return isword(palavra, 0);
+        
+    }else{
+        return palavra;
+    }
+
+    return palavra;
+}
+
+//VERIFICA SE EXISTE VOO IGUAL
+char *checks_for_flight(voo *v, char numerovoo[]){
+    voo *vootemp = v;
+
+    while(vootemp!=NULL){
+    if(!strcmp(numerovoo , vootemp->prefixo)){
+        printf("Esse voo ja existe!!\n");
+        printf("Insira novamente:\n");
+        scanf("%s%*c", numerovoo);
+    return checks_for_flight(v,numerovoo);
+    }
+    vootemp = vootemp->prox;
+    }
+        return numerovoo;
+}
+
+//MOSTRA OS PREFIXOS DO VOO, PARA CONSULTAR
+int show_all_flight_prefixes(voo *v){
+	voo *vootemp = v;
+	while(vootemp!=NULL){
+		printf("Prefixo do voos: %s \n", vootemp->prefixo);
+		vootemp = vootemp->prox;
+	}
+}
+ 
+// FUNÇÃO PARA MOSTRAR OS DADOS DO VOO
+void show_prefix_flight(voo *v){
+    voo *vootemp = v;
+	char prefixovootemp[20];
+	show_all_flight_prefixes(v);
+	printf("Insira o prefixo:");
+	scanf("%s%*c", prefixovootemp);
+    
+    while(vootemp!=NULL && strcmp(vootemp->prefixo, prefixovootemp)){
+      
+        vootemp = vootemp->prox;
+    }
+	if(vootemp!=NULL){
+	printf("------------------------\n");
+	printf("Numero do voo(prefixo): %s\n", vootemp->prefixo);
+	printf("Aeroporto de origem: %s \n", vootemp->ap_dep);
+	printf("Aeroporto de destino: %s \n", vootemp->ap_arv);
+	printf("Hora de decolagem: %s \n", vootemp->dp_time);
+	printf("Hora de aterrissagem: %s \n", vootemp->arv_time);
+	printf("Duracao do voo: %s \n", vootemp->flight_dur);
+	printf("Modelo do aviao: %s \n", vootemp->modeloaviao);
+    printf("------------------------\n");
+	}else{
+		printf("Nao foi possivel encontra esse voo, i");
+	}
+}
+
+//FUNCAO PARA COPIAR DAS VARIAVEIS AUXILIARES PARA A ESTRUTURA
+voo* inserts_flight_into_the_list(voo* v, char prefixo[], char ap_dep[], char ap_arv[],char dp_time[], char arv_time[], char flight_dur[], char modeloaviao[]) {
+    voo* aux = (voo*) malloc(sizeof(voo));
+    strcpy(aux->prefixo, prefixo);
+    strcpy(aux->ap_dep, ap_dep);
+    strcpy(aux->ap_arv, ap_arv);
+    strcpy(aux->dp_time, dp_time);
+    strcpy(aux->arv_time, arv_time);
+    strcpy(aux->flight_dur, flight_dur);
+    strcpy(aux->modeloaviao, modeloaviao);
+    aux->prox = v;
+    return aux;
+}
+
+// FUNÇÃO PARA VERIFICAR HORARIO
+int TimeVerify(char hora_origem[]){ 
+    int a, b;
+    sscanf(hora_origem, "%d:%d", &a, &b);
+    if(a>23 || b>59 || a<0 || b<0){
+        return 0;
+    }else{
+        return 1;
+    }
+}
+
+// FUNÇÃO PARA REGISTRAR VOO
+voo*   input_flight(voo *v){ 
+    int verificador_de_aviao;
+    char prefixo[50];
+    char ap_dep[50];
+    char ap_arv[50];
+    char dp_time[8];
+    char arv_time[8];
+    char flight_dur[8];
+    char modeloaviao[30];
+
+    printf("Insira o prefixo:");
+    scanf("%[^\n]s", prefixo);
+    strcpy(prefixo,checks_for_flight(v,prefixo));
+
+    printf("Aeroporto de Partida:");
+    scanf("%s%*c", ap_dep);
+    
+    while(strlen(ap_dep)>3){ //loop para garantir que o input do usuário está correto
+        printf("Digite um Aeroporto Valido.\n"); 
+        printf("Aeroporto de Partida: \n");
+        scanf("%s%*c", ap_dep);
+        
+    }
+
+    printf("Aeroporto de Destino:");
+    scanf("%s%*c", ap_arv);
+    while((strlen(ap_arv)>3) || (strcmp(ap_arv, ap_dep)==0)){
+        printf("Digite um Aeroporto Valido.\n");
+        printf("Aeroporto de Destino: \n");
+        scanf("%s%*c", ap_arv);
+        
+    }
+
+    printf("Horario da Decolagem:");
+    scanf("%s%*c", dp_time);
+    while(dp_time[2]!=':' || (strlen(dp_time)>5) || (TimeVerify(dp_time)!=1)){
+        printf("\a");
+        printf("O horario deve ser no formato hh:mm\n");
+        printf("Horario da Decolagem: \n");
+        scanf("%s%*c", dp_time);
+    }
+
+
+    printf("Horario da Aterrisagem:");
+    scanf("%s%*c", arv_time);
+    while(arv_time[2]!=':' || (strlen(arv_time)>5) || (TimeVerify(arv_time)!=1)){
+        printf("\a");
+        printf("O horario deve ser no formato hh:mm\n");
+        printf("Horario da Aterrisagem: \n");
+        scanf("%s%*c", arv_time);
+    }
+
+
+    printf("Duracao do Voo:");
+    scanf("%s%*c", flight_dur);
+    while(flight_dur[2]!=':' || (strlen(flight_dur)>5) || (TimeVerify(flight_dur)!=1)){
+        printf("\a");
+        printf("O horario deve ser no formato hh:mm\n");
+        printf("Duracao do Voo: \n");
+        scanf("%s%*c", flight_dur);
+    }
+
+
+    
+    printf("Insira o modelo do aviao: \n");
+    scanf("%s%*c", modeloaviao);
+
+    v =   inserts_flight_into_the_list(v, prefixo, ap_dep, ap_arv, dp_time, arv_time, flight_dur, modeloaviao);
+    printf("Voo Inserido com Sucesso\n");
+    return v;
+    printf("\n");
+
+}
+
+int print_flights(voo *v){
+    voo*vooChegada=v;
+    voo*vooPartida=v;
+   
+    int i=0;
+    int hrVoo; int minVoo;
+    int hora, minutos;
+    char horario_aeroporto[10];
+    char opcao[5];
+    
+    printf("Digite o horario do aeroporto\n");
+    scanf("%s%*c", horario_aeroporto);
+
+    while(horario_aeroporto[2]!=':' || (strlen(horario_aeroporto)>5) || (TimeVerify(horario_aeroporto)!=1)){
+        printf("O horario deve ser no formato hh:mm \n");
+        printf("Digite o horario do aeroporto: \n");
+        scanf("%s%*c", horario_aeroporto);
+    }
+    sscanf(horario_aeroporto, "%d:%d",&hora ,&minutos);
+ 
+
+
+    
+    printf("---------------------------------------------------------------------------------\n");
+    printf("\t\t\t PAINEL DE PARTIDAS\n");
+    printf("---------------------------------------------------------------------------------\n");
+    printf("HORARIO\t\t DESTINO\t  VOO\t\t ESTIMADO\t OBSERVACAO\t\n");
+
+    while(vooChegada!=NULL){
+  
+    sscanf(vooChegada->dp_time, "%d:%d", &hrVoo, &minVoo);    
+    printf(" %s\t\t   %s\t   \t%s   \t  %s\t\t  ",horario_aeroporto, vooChegada->ap_arv, vooChegada->prefixo, vooChegada->dp_time);
+
+    // VERIFICA O STATUS DO VOO DE PARTIDA
+    if((hrVoo-hora)>=1){
+        printf("Check-in Aberto\n");
+    }else if((hrVoo-hora)==00 && (minVoo-minutos)<=59 && (minVoo-minutos)>30){
+        printf("Check-in Fechado\n");
+    }else if((hrVoo-hora)==00 && (minVoo-minutos)<=30 && (minVoo-minutos)>=20){
+        printf("Embarque Proximo\n");
+    }else if((hrVoo-hora)==00 && (minVoo-minutos)<=20 && (minVoo-minutos)>10){
+        printf("Embarque Imediato\n");
+    }else if((hrVoo-hora)==00 && (minVoo-minutos)<=10 && (minVoo-minutos)>00){
+        printf("Ultima Chamada\n");
+    }else if((hrVoo-hora)==00 && (minVoo-minutos)<=00 && (minVoo-minutos)>-10){
+        printf("Partindo\n");
+    }else if((hrVoo<hora)){
+        printf("Voo Encerrado\n");
+    }else {
+        printf("Voo Encerrado\n");
+    }
+    
+    i++;
+        vooChegada = vooChegada->prox;
+    } //FINAL DO WHILE
+
+ 
+    printf("---------------------------------------------------------------------------------\n");
+
+  // PAINEL PARA MOSTRAR VOOS DE CHEGADA
+
+    printf("---------------------------------------------------------------------------------\n");
+    printf("\t\t\t PAINEL DE CHEGADAS\n");
+    printf("---------------------------------------------------------------------------------\n");
+    printf("HORARIO\t\t ORIGEM\t\t VOO\t\t ESTIMADO\t OBSERVACAO\t\n");
+
+    while(vooPartida!=NULL){
+  
+    sscanf(vooPartida->dp_time, "%d:%d", &hrVoo, &minVoo);
+    printf(" %s\t\t   %s\t  \t%s   \t  %s\t\t  ",horario_aeroporto , vooPartida->ap_dep, vooPartida->prefixo, vooPartida->arv_time);
+
+    // VERIFICA O STATUS DO VOO DE PARTIDA
+    if((hora-hrVoo)>=1){
+        printf("Estimado\n");
+    }else if((hrVoo-hora)>=00 && (minVoo-minutos)<=59 && (minVoo-minutos)>30){
+        printf("Confirmado\n");
+    }else if((hrVoo-hora)>=00 && (minVoo-minutos)<=30 && (minVoo-minutos)>20){
+        printf("Pouso\n");
+    }else if((hrVoo-hora)>=00 && (minVoo-minutos)<=20 && (minVoo-minutos)>10){
+        printf("Desembarcando\n");
+    }else if((hrVoo-hora)>=00 && (minVoo-minutos)<=10 && (minVoo-minutos)>00){
+        printf("Ultima Chamada\n");
+    }else if((hrVoo-hora)>=00 && (minVoo-minutos)<=00 && (minVoo-minutos)>-10){
+        printf("Partindo\n");
+    }else if((hrVoo-hora<0 && minVoo<minutos)){
+        printf("Voo Encerrado\n");
+    }else {
+        printf("Voo Encerrado\n");
+    }
+    
+    i++;
+        vooPartida = vooPartida->prox;
+    } //FINAL DO WHILE
+
+    if(i==0){
+        printf("\n");
+        printf("\t\t\tNAO FOI ENCONTRADO VOOS\n");
+        return 0;
+    }
+    printf("---------------------------------------------------------------------------------   \n");
+
+    return 0;
+    
+}
+
+// FUNÇÃO PARA EDITAR VOOS
+int edit_flight(voo *v){
+    int opcao_edita_voo;
+    char vootemporario[20];
+    char numvoo[20];
+	show_all_flight_prefixes(v);
+    printf("Insira o numero do voo\n");
+    scanf("%s%*c", numvoo);
+
+    voo *vv =v;
+
+    while(vv!=NULL && strcmp(numvoo, vv->prefixo)){
+         vv = vv->prox;
+    }
+
+    if(vv!=NULL){
+        printf("-----------------------------------------------------------------------------------------------------------------------------------------\n");
+        printf ("\t\t\t\t\t\t\tEscolha o que deseja alterar: \n");
+        printf("-----------------------------------------------------------------------------------------------------------------------------------------\n");
+        printf ("Prefixo[1] Aeroporto de partida[2] Aeroporto de destino[3] Horario decolagem[4] Horario de aterrissagem[5] Duracao do Voo[6] Aeronave[7]\n");
+        scanf ("%d", &opcao_edita_voo);
+
+        if (opcao_edita_voo == 1){
+            printf("Insira o prefixo: \n");
+            scanf("%s%*c", vootemporario);
+            strcpy(vootemporario, checks_for_flight(v,vootemporario));
+            strcpy(vootemporario, vv->prefixo);
+            
+
+        }else if(opcao_edita_voo == 2){
+            printf("Aeroporto de Partida: \n");
+            scanf("%s%*c", vv->ap_dep);
+                while(strlen(vv->ap_dep)>3){ //loop para garantir que o input do usuário está correto
+                    printf("Digite um Aeroporto Valido.\n"); 
+                    printf("Aeroporto de Partida: \n");
+                    scanf("%s%*c", vv->ap_dep);
+                }
+        
+    
+        }else if(opcao_edita_voo == 3){
+                printf("Aeroporto de Destino: \n");
+                scanf("%s%*c", vv->ap_arv);
+    
+                while((strlen(vv->ap_arv)>3) || (strcmp(vv->ap_arv, vv->ap_dep)==0)){
+                    printf("Digite um Aeroporto Valido.\n");
+                    printf("Aeroporto de Destino: \n");
+                    scanf("%s%*c", vv->ap_arv);
+                    }
+
+        }else if(opcao_edita_voo == 4){
+                printf("Horario da Decolagem: \n");
+                scanf("%s%*c", vv->dp_time);
+                while(vv->dp_time[2]!=':' || (strlen(vv->dp_time)>5) || (TimeVerify(vv->dp_time)!=1)){
+                    printf("\a");
+                    printf("O horario deve ser no formato hh:mm\n");
+                    printf("Horario da Decolagem: \n");
+                    scanf("%s%*c", vv->dp_time);
+                }
+
+        }else if(opcao_edita_voo == 5){
+                printf("Horario da Aterrisagem: \n");
+                scanf("%s%*c", vv->arv_time);
+                while(vv->arv_time[2]!=':' || (strlen(vv->arv_time)>5) || (TimeVerify(vv->arv_time)!=1)){
+                    printf("\a");
+                    printf("O horario deve ser no formato hh:mm\n");
+                    printf("Horario da Aterrisagem: \n");
+                    scanf("%s%*c", vv->arv_time);
+                }
+        }else if(opcao_edita_voo == 6){
+                printf("Duracao do Voo: \n");
+                scanf("%s%*c", vv->flight_dur);
+                while(vv->flight_dur[2]!=':' || (strlen(vv->flight_dur)>5) || (TimeVerify(vv->flight_dur)!=1)){
+                    printf("\a");
+                    printf("O horario deve ser no formato hh:mm\n");
+                    printf("Duracao do Voo: \n");
+                    scanf("%s%*c", vv->flight_dur);
+    }
+        }else if(opcao_edita_voo == 7){
+            printf("Insira o modelo do aviao: \n");
+            scanf("%s%*c", vv->modeloaviao);
+        }
+
+
+
+    }else{
+        printf("Nao existe esse voo\n");
+        return 0;
+    }
+    printf("VOO ALTERADO COM SUCESSO !!\n");
+    return 1;
+}
+
+// FUNÇÃO PARA REMOVER VOOS
+voo* remove_flight(voo *v){
+    char numvoo[20];
+	show_all_flight_prefixes(v);
+    printf("Insira o numero do voo para deletar:\n");
+    scanf("%s%*c", numvoo);
+    voo *vooanterior = v; //Voo anterior
+    voo *vootemp = v; // Usado para encontrar o voo
+    
+    while(vootemp!= NULL && strcmp(numvoo, vootemp->prefixo)) { // localiza o elemento
+        vooanterior = vootemp;
+        vootemp = vootemp->prox;      
+    }
+    if(vootemp != NULL) {
+        if(vootemp == v){
+            v = v->prox; 
+            return v;
+        }else{
+			vooanterior->prox = vootemp->prox;
+			free(vootemp);
+			printf("Voo deletado com sucesso!\n");
+			return v;
+        }
+    }else{  printf("Voo nao encontrado\n");
+    }
+    return v;
+}
+
+
+void ezclogo4(){
+    printf("MMMMMMMMMMMMMMMMMNmddddmNMMMMMMMMMMMMMMMMMMMMMMMMMMNmmdddmmNMMMMMMMMMMMMMMMMMMMMMMMMMMNmdddmmNMMMMMMMMMMMMMMMM\n");
+    printf("MMMMMMMMMMMMdy+/----------/+ydMMMMMMMMMMMMMMMMmhyo+++oooo+++osydNMMMMMMMMMMMMMMMNds+:---------:/oymMMMMMMMMMMM\n");
+    printf("MMMMMMMMMdo:-:+shmNNMMNNmhy+:-:odMMMMMMMMMMMdo+oyhdNNMMMMMNmdhso+ohNMMMMMMMMMMh+--:oyhmNNMMNmdhs/--/smMMMMMMMM\n");
+    printf("MMMMMMMh/-:sdMMMMMMMMMMMMMMMMds:-/hMMMMMMMMMNdmMMMMMMMMMMMMMMMMNds+oyNMMMMMNy:-/ymMMMMMMMMMMMMMMMNh+--+mMMMMMM\n");
+    printf("MMMMMm+::yNMMMMMMMMMMMMMMMMMMMMNy:-/mMMMMMMMMMMMMMMMMMMMMMMMMMMMMMms+ohMMMd:-/hMMMMMMMMMMMMMMMMMMMMMmo//yNMMMM\n");
+    printf("MMMMd/:+NMMMMMMMMNhyyyyyydMMMMMMMN+-:dMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMdo+yMy--sMMMMMMMMMMdhyyyyyhNMMMMMMm+/oNMMM\n");
+    printf("MMMm/:oMMMMMMMMdsyNMMMMMMNMMMMMMMMMo-:dMMMMMMMMMMNNNNNNNNNNNNNMMMMMMMmo+o--yMMMMMMMMmsymMMMMMMNNMMMMMMMN+/oNMM\n");
+    printf("MMM+:/NMMMMMMMshMMMMMMMMMMMMMMMMMMMM/-/MMMMMMMMMNddddddddddy+hMMMMMMMMd++:oMMMMMMMMsyMMMMMMMMMMMMMMMMMMMm//yMM\n");
+    printf("MMd::hMMMMMMMsdMMMMMMMMMMMMMMMMMMMMMh--dMMMMMMMMMMMMMMMMMmshMMMMMMMMMMMo+/NMMMMMMMohMMMMMMMMMMMMMMMMMMMMMs/+NM\n");
+    printf("MMy::NMMMMMMM/hhhhhhhhhhmMMMMMMMMMMMN--yMMMMMMMMMMMMMMMmshMMMMMMMMMMMMMs+oMMMMMMMN/MMMMMMMMMMMMMMMMMMMMMMh//mM\n");
+    printf("MMh::mMMMMMMM+NNNNNNNNNNMMMMMMMMMMMMM/:yMMMMMMMMMMMMMmshMMMMMMMMMMMMMMMs+sMMMMMMMN+MMMMMMMMMMMMMMMMMMMMMMh//mM\n");
+    printf("MMm::hMMMMMMMsdMMMMMMMMMMMMMMMMMMMMMMs+oMMMMMMMMMMMmshMMMMMMMMMMMMMMMMN++yMMMMMMMModMMMMMMMMMMMMMMMMMMMMMs/+MM\n");
+    printf("MMMo:/NMMMMMMMohMMMMMMMMMMMMMMMMMMMMMm++hMMMMMMMMmshMMMMMMMMMMMMMMMMMMy+oNMMMMMMMMNohMMMMMMMMMMMMMMMMMMMm//hMM\n");
+    printf("MMMN/:oNMMMMMMMdshNMMMMMMNMMMMMMMMMMMMh++dMMMMMMmohhhhhhhhhhhdMMMMMMMh++dMMMMMMMMMMMdsymMMMMMMNNMMMMMMMm+/oMMM\n");
+    printf("MMMMm/:+mMMMMMMMMNhyyyyyydMMMMMMMMMMMMMh++yNMMMMMMMMMMMMMMMMMMMMMMMNs+odMMMMMMMMMMMMMMNhyyyyyyhNMMMMMMd+/oNMMM\n");
+    printf("MMMMMNs:/sNMMMMMMMMMMMMMMMMMMMMNyyNMMMMMmo+ohNMMMMMMMMMMMMMMMMMMMNho+smMMMMMmyhNMMMMMMMMMMMMMMMMMMMMms/+hMMMMM\n");
+    printf("MMMMMMMmo::ohNMMMMMMMMMMMMMMNho::oNMMMMMMMdo++ydNMMMMMMMMMMMMMNds++sdMMMMMMMmo/+ydMMMMMMMMMMMMMMMNho/+yNMMMMMM\n");
+    printf("MMMMMMMMMmy+::+sydmmmmmmdys+::+ymMMMMMMMMMMMmyo++oshhddmddhyso++ohNMMMMMMMMMMMmy+/+oyhdmmNNmmdys+//ohNMMMMMMMM\n");
+    printf("MMMMMMMMMMMMNhyo+/::::::/+oyhNMMMMMMMMMMMMMMMMMNdhysoo+++oosyhmNMMMMMMMMMMMMMMMMMmhyo+///////+oshdNMMMMMMMMMMM\n");
+    printf("MMMMMMMMMMMMMMMMMMNNNNNNMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMNNNNNMMMMMMMMMMMMMMMMMM\n");
+}
+ 
+
+int main() {
+    //Nomeando a aplicação no Terminal
+    #ifdef _WIN32
+        SetConsoleTitle("EZC Linhas Aereas - Terminal de Controle");
+    #else
+        printf("%c]0;%s%c", '\033', "EZC Linhas Aereas - Terminal de Controle", '\007');
+    #endif
+
+    //Limpeza do Terminal
+    #ifdef _WIN32
+        system("cls"); //Este comando irá limpar a tela do prompt do Windows
+    #else 
+        system("clean"); //No caso da máquina não ser Windows, Linux e MacOS compartilham deste mesmo comando para limpar o termianl
+    #endif
+
+    //Apresentação
+    ezclogo4();
+    #ifdef _WIN32
+        Sleep(500); //Se o sistema for Windows, essa função da Windows.h vai fazer a tela congelar por 1 segundo
+    #else
+        usleep(1000); //Já se o sistema for Unix, essa função da Unistd.h vai fazer a tela congelar por 1 segundo
+    #endif
+
+    voo *v;
+
+    pessoa *l;
+    v=NULL;
+
+    l=NULL;
+
+    while(2==2){
+        switch(mainMenu()){
+            case 1:
+                switch(guestMenu()){
+                    case 1:
+                        ClearTerminal();
+                       
+                        SystemPause("CLIQUE QUALQUER TECLA PARA VOLTAR AO MENU PRINCIPAL...");
+                        break;
+                    case 2:
+                        ClearTerminal();
+                       
+                        SystemPause("CLIQUE QUALQUER TECLA PARA VOLTAR AO MENU PRINCIPAL...");
+                        break;
+                    case 3:
+                        ClearTerminal();
+                       
+                        SystemPause("CLIQUE QUALQUER TECLA PARA VOLTAR AO MENU PRINCIPAL...");
+                    case 4:
+                        break;
+                }
+                break;
+            case 2:
+                switch(adminMenu()){
+                    case 1:
+                        switch(flightsMenu()){
+                            case 1:
+                                ClearTerminal();
+                                v = input_flight(v);
+                                SystemPause("CLIQUE QUALQUER TECLA PARA VOLTAR AO MENU PRINCIPAL...");
+                                break;
+                            case 2:
+                                ClearTerminal();
+                               
+                                edit_flight(v);
+                                SystemPause("CLIQUE QUALQUER TECLA PARA VOLTAR AO MENU PRINCIPAL...");
+                                break;
+                            case 3:
+                                ClearTerminal();
+                                show_prefix_flight(v);
+                                SystemPause("CLIQUE QUALQUER TECLA PARA VOLTAR AO MENU PRINCIPAL...");
+                                break;
+                            case 4:
+                                ClearTerminal();
+                               
+                                v = remove_flight(v);
+                                SystemPause("CLIQUE QUALQUER TECLA PARA VOLTAR AO MENU PRINCIPAL...");
+                                break;
+                            case 5:
+                                break;
+                        }
+                        break;
+                    case 2:
+                        switch(aircraftMenu()){
+                            case 1:
+                                ClearTerminal();
+                               
+                                SystemPause("CLIQUE QUALQUER TECLA PARA VOLTAR AO MENU PRINCIPAL...");
+                                break;
+                            case 2:
+                                ClearTerminal();
+                              
+                                SystemPause("CLIQUE QUALQUER TECLA PARA VOLTAR AO MENU PRINCIPAL...");
+                                break;
+                            case 3:
+                                ClearTerminal();
+                              
+                                SystemPause("CLIQUE QUALQUER TECLA PARA VOLTAR AO MENU PRINCIPAL...");
+                                break;
+                            case 4:
+                                ClearTerminal();
+                             
+                               
+                                SystemPause("CLIQUE QUALQUER TECLA PARA VOLTAR AO MENU PRINCIPAL...");
+                                break;
+                            case 5:
+                                break;
+                        }
+                        break;
+                    case 3:
+                        switch(personMenu()){
+                            case 1:
+                                ClearTerminal();
+                                l = cadastro(l);
+                                SystemPause("CLIQUE QUALQUER TECLA PARA VOLTAR AO MENU PRINCIPAL...");
+                                break;
+                            case 2:
+                                ClearTerminal();
+                                editar(l);
+                                SystemPause("CLIQUE QUALQUER TECLA PARA VOLTAR AO MENU PRINCIPAL...");
+                                break;
+                            case 3:
+                                ClearTerminal();
+                                consultar(l);
+                                SystemPause("CLIQUE QUALQUER TECLA PARA VOLTAR AO MENU PRINCIPAL...");
+                                break;
+                            case 4:
+                                ClearTerminal();
+                                l = retira(l);
+                                SystemPause("CLIQUE QUALQUER TECLA PARA VOLTAR AO MENU PRINCIPAL...");
+                                break;
+                            case 5:
+                                break;
+                        }
+                        break;
+                    case 4:
+                        break;
+                }
+                break;
+            case 3:
+                switch(casosTestes()){
+                    case 1:
+                       
+                    SystemPause("Dados inseridos com sucesso. Pressione qualquer tecla para continuar...");
+                    break;
+                    case 2:
+                    break;
+                }
+                break;
+        }  
+    }
+return 0;
+}
+
+
